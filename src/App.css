@@ -1,0 +1,184 @@
+
+/* Logo animations */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-blue-to-purple {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+}
+
+.bg-gradient-green-to-blue {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+/* Glass effects */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.dark .glass-panel {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Enhanced glass morphism */
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-morphism {
+  background: rgba(15, 15, 15, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+/* Input focus effects */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+/* Vibrant card variant */
+.vibrant-card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.vibrant-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(to right, #2563eb, #60a5fa);
+}
+
+.dark .vibrant-card::before {
+  background: linear-gradient(to right, #3b82f6, #93c5fd);
+}
+
+.vibrant-card.success::before {
+  background: linear-gradient(to right, #10b981, #34d399);
+}
+
+.vibrant-card.warning::before {
+  background: linear-gradient(to right, #f59e0b, #fbbf24);
+}
+
+.vibrant-card.danger::before {
+  background: linear-gradient(to right, #ef4444, #f87171);
+}
+
+/* Refined transitions */
+.transition-all-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animated glow effects */
+.glow-effect {
+  position: relative;
+}
+
+.glow-effect::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(45deg, 
+    rgba(56, 189, 248, 0) 0%, 
+    rgba(56, 189, 248, 0.4) 50%, 
+    rgba(56, 189, 248, 0) 100%
+  );
+  border-radius: inherit;
+  z-index: -1;
+  animation: glow-animation 3s linear infinite;
+}
+
+@keyframes glow-animation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Neon text effects */
+.neon-text {
+  text-shadow: 0 0 5px rgba(56, 189, 248, 0.5), 
+               0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.neon-text-purple {
+  text-shadow: 0 0 5px rgba(139, 92, 246, 0.5), 
+               0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.neon-text-green {
+  text-shadow: 0 0 5px rgba(16, 185, 129, 0.5), 
+               0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+/* Gradient borders */
+.gradient-border {
+  position: relative;
+  border-radius: 10px;
+  padding: 1px;
+  background: linear-gradient(45deg, #2563eb, #60a5fa, #3b82f6, #2563eb);
+  background-size: 200% 200%;
+  animation: gradient-animation 4s ease infinite;
+}
+
+@keyframes gradient-animation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-border-inner {
+  background: var(--background);
+  border-radius: 9px;
+  padding: 16px;
+  height: 100%;
+}
+
+/* Floating animation */
+.floating {
+  animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}

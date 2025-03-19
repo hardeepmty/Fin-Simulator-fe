@@ -1,0 +1,293 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Glass morphism */
+  .glass {
+    @apply bg-white/10 backdrop-blur-lg backdrop-filter border border-white/20 shadow-lg transition-all duration-300;
+  }
+  
+  .glass-dark {
+    @apply bg-black/10 backdrop-blur-lg backdrop-filter border border-black/10 shadow-lg transition-all duration-300;
+  }
+
+  /* Translucent cards */
+  .card-translucent {
+    @apply bg-background/70 backdrop-blur-md border border-border/40 shadow-sm transition-all duration-300;
+  }
+
+  /* Transitions */
+  .page-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-[1.02];
+  }
+  
+  /* Cards */
+  .fin-card {
+    @apply rounded-xl p-5 shadow-sm border border-border/40 transition-all duration-300 backdrop-blur-sm;
+  }
+  
+  .fin-card-hover {
+    @apply hover:shadow-md hover:border-primary/20 hover:bg-card/80;
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary/80 animate-rotate-gradient bg-size-200;
+  }
+
+  .bg-gradient-blue {
+    @apply bg-gradient-to-r from-fin-blue to-fin-light-blue animate-rotate-gradient bg-size-200;
+  }
+
+  .bg-gradient-success {
+    @apply bg-gradient-to-r from-fin-success to-fin-success/80 animate-rotate-gradient bg-size-200;
+  }
+
+  .bg-gradient-purple {
+    @apply bg-gradient-to-r from-fin-purple to-fin-purple/80 animate-rotate-gradient bg-size-200;
+  }
+
+  .bg-gradient-amber {
+    @apply bg-gradient-to-r from-fin-amber to-fin-amber/80 animate-rotate-gradient bg-size-200;
+  }
+
+  .bg-gradient-cyan {
+    @apply bg-gradient-to-r from-fin-cyan to-fin-cyan/80 animate-rotate-gradient bg-size-200;
+  }
+
+  .bg-size-200 {
+    background-size: 200% 200%;
+  }
+
+  /* Dividers */
+  .divider {
+    @apply h-px w-full bg-border my-4;
+  }
+
+  /* Frosted inputs */
+  .input-frosted {
+    @apply bg-background/60 backdrop-blur-sm border border-border/60 rounded-md transition-all duration-300;
+  }
+  
+  /* Vibrant card elements for dark mode */
+  .dark .vibrant-element {
+    @apply border-primary/30 bg-secondary/40 transition-all duration-300;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+  }
+  
+  /* Glowing effects for dark mode */
+  .dark .glow-border {
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    @apply transition-all duration-300;
+  }
+  
+  .dark .glow-border-purple {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    @apply transition-all duration-300;
+  }
+  
+  .dark .glow-border-green {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    @apply transition-all duration-300;
+  }
+  
+  .dark .glow-border-amber {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    @apply transition-all duration-300;
+  }
+  
+  .dark .glow-border-cyan {
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    @apply transition-all duration-300;
+  }
+  
+  /* Animated borders */
+  .animate-border {
+    @apply relative transition-all duration-300;
+  }
+  
+  .animate-border::after {
+    content: "";
+    @apply absolute inset-0 rounded-lg;
+    background: linear-gradient(
+      90deg,
+      theme('colors.primary.DEFAULT'),
+      theme('colors.blue.400'),
+      theme('colors.purple.500'),
+      theme('colors.primary.DEFAULT')
+    );
+    background-size: 400% 400%;
+    animation: border-animation 3s ease infinite;
+    z-index: -1;
+    margin: -2px;
+  }
+  
+  @keyframes border-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Card hover effects */
+  .card-hover-effect {
+    @apply transition-all duration-300 hover:shadow-md hover:translate-y-[-5px];
+  }
+
+  /* Smooth page transitions */
+  .page-enter {
+    @apply opacity-0;
+  }
+  
+  .page-enter-active {
+    @apply opacity-100 transition-opacity duration-300;
+  }
+  
+  .page-exit {
+    @apply opacity-100;
+  }
+  
+  .page-exit-active {
+    @apply opacity-0 transition-opacity duration-300;
+  }
+
+  /* Button animations */
+  .btn-pulse {
+    @apply relative overflow-hidden;
+  }
+  
+  .btn-pulse::after {
+    @apply absolute inset-0 rounded-md bg-white/20 opacity-0 transition-opacity duration-500;
+    content: "";
+  }
+  
+  .btn-pulse:hover::after {
+    @apply opacity-100;
+    animation: btn-pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes btn-pulse {
+    0%, 100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 0.3;
+    }
+  }
+}
