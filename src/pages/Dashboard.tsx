@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, TrendingUp } from "lucide-react";
+import {GET_TOP_COMPANIES,SELL_STOCK} from '../api/dashboard';
+
 
 // Define Stock type for API response
 interface Stock {
@@ -43,7 +45,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchTopStocks = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/stocks/top-companies");
+        const res = await axios.get(GET_TOP_COMPANIES);
         setTopStocks(res.data); // Store API response in state
       } catch (error) {
         console.error("Error fetching top stocks:", error);
@@ -99,7 +101,7 @@ const handleSellStock = async (stockId: string, quantity: number) => {
 
     // Call the sell stock API
     const res = await axios.post(
-      "http://localhost:8000/api/stockex/sell-stock",
+      SELL_STOCK,
       { symbol: stockId, amount: quantity },
       { headers: { Authorization: `Bearer ${token}` } }
     );

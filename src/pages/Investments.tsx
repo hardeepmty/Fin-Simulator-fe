@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { Search, TrendingUp, TrendingDown } from "lucide-react";
+import {GET_TOP_COMPANIES , BUY_STOCK} from '../api/dashboard';
+import {GET_STOCK_QUOTE} from '../api/investments';
+
 
 // Define Stock interface with full details
 interface Stock {
@@ -38,7 +41,7 @@ const Investments = () => {
   useEffect(() => {
     const fetchTopStocks = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/stocks/top-companies");
+        const res = await axios.get(GET_TOP_COMPANIES);
         setTopStocks(res.data);
       } catch (error) {
         console.error("Error fetching top stocks:", error);
@@ -54,7 +57,7 @@ const Investments = () => {
   
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:8000/api/stocks/quote?symbol=${searchTerm.toUpperCase()}`);
+      const res = await axios.get(GET_STOCK_QUOTE(searchTerm));
   
       // ✅ Check if stock is not found (404)
       if (res.status === 404) {
@@ -120,7 +123,7 @@ const Investments = () => {
 
       // Call the buy stock API
       const res = await axios.post(
-        "http://localhost:8000/api/stockex/buy-stock",
+        BUY_STOCK,
         {
           symbol: stockId,
           amount: quantity,

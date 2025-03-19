@@ -7,6 +7,7 @@ import { formatCurrency } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { Gem } from "lucide-react";
 import axios from "axios";
+import { GET_COLLECTIBLES , BUY_COLLECTIBLE} from '../api/collectibles';
 
 const Marketplace = () => {
   const { user } = useSimulation();
@@ -16,7 +17,7 @@ const Marketplace = () => {
   useEffect(() => {
     const fetchCollectibles = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/collectible/collectibles");
+        const response = await axios.get(GET_COLLECTIBLES);
         const collectiblesWithImages = response.data.map((item) => ({
           ...item,
           imageUrl: `https://picsum.photos/400/300?random=${item.name}`,
@@ -43,7 +44,7 @@ const Marketplace = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:8000/api/collectible/buy-collectible",
+        BUY_COLLECTIBLE,
         { collectibleId, quantity: 1 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
