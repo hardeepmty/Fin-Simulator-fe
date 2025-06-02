@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SimulationProvider } from "./context/SimulationContext";
+import { GamesProvider } from '@/context/GamesContext';
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Investments from "./pages/Investments";
@@ -15,6 +16,7 @@ import Leaderboards from "./pages/Leaderboards";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import GamesHub from "./pages/GamesHub";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <SimulationProvider>
+         <GamesProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -33,11 +36,13 @@ const App = () => (
             <Route path="/betting" element={<Betting />} />
             <Route path="/loans" element={<Loans />} />
             <Route path="/leaderboards" element={<Leaderboards />} />
+             <Route path="/games" element={<GamesHub />} />
             <Route path="/login" element={<Login />} />
             <Route path= "/signup" element={<Signup/>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </GamesProvider>
       </SimulationProvider>
     </TooltipProvider>
   </QueryClientProvider>

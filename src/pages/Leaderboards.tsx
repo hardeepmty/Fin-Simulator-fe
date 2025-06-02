@@ -1,38 +1,106 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import Header from '@/components/Layout/Header';
 import Navigation from '@/components/Layout/Navigation';
 import LeaderboardCard, { LeaderboardUser } from '@/components/Leaderboard/LeaderboardCard';
 import { useSimulation } from '@/context/SimulationContext';
 import { Trophy, TrendingUp, Gem, Users, Award, Medal } from 'lucide-react';
-
-// Mock data for demonstration
-const wealthLeaders: LeaderboardUser[] = [
-  { id: '1', name: 'Alex Morgan', score: 2345000, rank: 1, change: 'up', badge: 'Billionaire' },
-  { id: '2', name: 'Sam Wilson', score: 1567000, rank: 2, change: 'same', badge: 'Millionaire' },
-  { id: '3', name: 'Taylor Swift', score: 987000, rank: 3, change: 'up', badge: 'Investor' },
-  { id: '4', name: 'Jamie Lee', score: 764500, rank: 4, change: 'down' },
-  { id: '5', name: 'Robin Banks', score: 634200, rank: 5, change: 'up' },
-];
-
-const stockLeaders: LeaderboardUser[] = [
-  { id: '3', name: 'Taylor Swift', score: 156, rank: 1, change: 'up', badge: 'Market Master' },
-  { id: '5', name: 'Robin Banks', score: 132, rank: 2, change: 'up', badge: 'Stock Pro' },
-  { id: '2', name: 'Sam Wilson', score: 98, rank: 3, change: 'down', badge: 'Trader' },
-  { id: '1', name: 'Alex Morgan', score: 87, rank: 4, change: 'down' },
-  { id: '6', name: 'Jordan Lee', score: 65, rank: 5, change: 'up' },
-];
-
-const assetLeaders: LeaderboardUser[] = [
-  { id: '1', name: 'Alex Morgan', score: 28, rank: 1, change: 'same', badge: 'Collector' },
-  { id: '4', name: 'Jamie Lee', score: 22, rank: 2, change: 'up', badge: 'Investor' },
-  { id: '7', name: 'Casey Kim', score: 19, rank: 3, change: 'up', badge: 'Enthusiast' },
-  { id: '8', name: 'Riley Johnson', score: 14, rank: 4, change: 'same' },
-  { id: '2', name: 'Sam Wilson', score: 12, rank: 5, change: 'down' },
-];
+import { GET_LEADS} from '../api/leaderboard';
 
 const Leaderboards: React.FC = () => {
-  const { player } = useSimulation();
+  const { user, virtualCurrency } = useSimulation();
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userRank, setUserRank] = useState(0);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(GET_LEADS);
+        const data = response.data.data;
+        setLeaderboardData(data || []);
+        
+        // Find current user's rank
+        if (user) {
+          const userIndex = data.findIndex((u: any) => u._id === user._id);
+          setUserRank(userIndex >= 0 ? userIndex + 1 : 0);
+        }
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        setLeaderboardData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [user]);
+
+  // Safe calculation functions with defaults
+  const calculateStocksValue = (stocks?: any[]) => {
+    return (stocks || []).reduce((total, stock) => {
+      return total + ((stock?.shares || 0) * (stock?.purchasePrice || 0));
+    }, 0);
+  };
+
+  const calculateAssetsValue = (assets?: any[]) => {
+    return (assets || []).reduce((total, asset) => {
+      return total + (asset?.price || 0);
+    }, 0);
+  };
+
+  // Transform API data to match frontend format
+  const transformLeaderboardData = (type: 'wealth' | 'stocks' | 'assets'): LeaderboardUser[] => {
+    if (!leaderboardData || !leaderboardData.length) return [];
+    
+    return leaderboardData
+      .map(user => ({
+        ...user,
+        totalWealth: (user.vcBalance || 0) + 
+                     calculateStocksValue(user.stocks) + 
+                     calculateAssetsValue(user.assets),
+        stocksValue: calculateStocksValue(user.stocks),
+        assetsValue: calculateAssetsValue(user.assets)
+      }))
+      .sort((a, b) => {
+        if (type === 'wealth') return b.totalWealth - a.totalWealth;
+        if (type === 'stocks') return b.stocksValue - a.stocksValue;
+        return b.assetsValue - a.assetsValue;
+      })
+      .map((user, index) => ({
+        id: user._id,
+        name: user.name || 'Anonymous',
+        score: type === 'wealth' ? user.totalWealth : 
+               type === 'stocks' ? user.stocksValue : 
+               user.assetsValue,
+        rank: index + 1,
+        change: 'same',
+        badge: user.role || 'Player',
+      }))
+      .slice(0, 5);
+  };
+
+  // Get top users for each category
+  const wealthLeaders = transformLeaderboardData('wealth');
+  const stockLeaders = transformLeaderboardData('stocks');
+  const assetLeaders = transformLeaderboardData('assets');
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <div className="flex flex-1">
+          <Navigation />
+          <main className="flex-1 p-6 pt-24">
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-3xl font-bold mb-6">Loading leaderboard...</h1>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -55,7 +123,7 @@ const Leaderboards: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">Total Players</h3>
-                  <p className="text-3xl font-bold">1,457</p>
+                  <p className="text-3xl font-bold">{leaderboardData.length.toLocaleString()}</p>
                 </div>
               </div>
               
@@ -65,7 +133,7 @@ const Leaderboards: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">Your Rank</h3>
-                  <p className="text-3xl font-bold">#42</p>
+                  <p className="text-3xl font-bold">{userRank > 0 ? `#${userRank}` : 'Unranked'}</p>
                 </div>
               </div>
               
@@ -75,7 +143,7 @@ const Leaderboards: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">Your Net Worth</h3>
-                  <p className="text-3xl font-bold">${player.balance.toLocaleString()}</p>
+                  <p className="text-3xl font-bold">${virtualCurrency.toLocaleString()}</p>
                 </div>
               </div>
             </div>

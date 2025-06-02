@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, TrendingUp, Award, Ticket, Landmark } from 'lucide-react';
+import { Home, TrendingUp, Award, Ticket, Landmark, Table } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -16,6 +16,7 @@ const navItems: NavItem[] = [
   { path: '/marketplace', label: 'Marketplace', icon: Award },
   { path: '/betting', label: 'Betting', icon: Ticket },
   { path: '/loans', label: 'Loans', icon: Landmark },
+  { path: '/leaderboards', label: 'Leaderboards', icon: Table },
 ];
 
 const Navigation: React.FC = () => {
