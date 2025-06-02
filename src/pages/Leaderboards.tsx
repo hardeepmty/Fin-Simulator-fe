@@ -109,7 +109,7 @@ const Leaderboards: React.FC = () => {
       <div className="flex flex-1">
         <Navigation />
         
-        <main className="flex-1 p-6 pt-24 animate-fade-up">
+        <main className="flex-1 p-6 pt-24 animate-fade-up ml-60">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-3xl font-bold mb-6 flex items-center">
               <Trophy className="mr-2 h-6 w-6 text-amber-500 animate-pulse-subtle" />
