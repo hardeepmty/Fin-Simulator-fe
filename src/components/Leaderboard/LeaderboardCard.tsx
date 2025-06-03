@@ -83,7 +83,7 @@ const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, users, classNa
                   {user.badge && (
                     <Badge variant="outline" className="text-xs flex items-center gap-1">
                       {getBadgeIcon(user.rank)}
-                      {user.badge}
+                      
                     </Badge>
                   )}
                 </div>

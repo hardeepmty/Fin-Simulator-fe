@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { path: '/betting', label: 'Betting', icon: Ticket },
   { path: '/loans', label: 'Loans', icon: Landmark },
   { path: '/leaderboards', label: 'Leaderboards', icon: Table },
+  { path: '/games', label: 'Game Hub', icon: Table },
 ];
 
 const Navigation: React.FC = () => {

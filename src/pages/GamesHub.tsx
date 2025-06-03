@@ -24,7 +24,7 @@ const GamesHub: React.FC = () => {
       <div className="flex flex-1">
         <Navigation />
         
-        <main className="flex-1 p-6 pt-24">
+        <main className="flex-1 p-6 pt-24 ml-60">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-3xl font-bold mb-6 text-white">Games</h1>
             
