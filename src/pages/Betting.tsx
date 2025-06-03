@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSimulation } from '@/context/SimulationContext';
+import { useSimulation } from '@/context/SimulationContext'; // Import useSimulation
 import Header from '@/components/Layout/Header';
 import Navigation from '@/components/Layout/Navigation';
 import { Card } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, DollarSign, Ticket, TrendingUp, Info, XCircle } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Ticket, TrendingUp, Info, XCircle, PlusCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 
 // Define the interface for a single betting event
@@ -23,6 +23,7 @@ interface BettingEvent {
     name: string; // Mapped from backend 'option'
     odds: number; // Mapped from backend 'multiplier'
   }[];
+  isClosed: boolean; // Added for declare result functionality
 }
 
 // Define the interface for a user's bet (from the backend's Bet model)
@@ -32,7 +33,8 @@ interface UserBet {
   event: {
     _id: string;
     title: string;
-    // Add other relevant event details if needed for display in the modal
+    isClosed: boolean;
+    winner: string | null;
   };
   selectedOption: string; // The name of the option (e.g., "India wins")
   amount: number;
@@ -40,8 +42,8 @@ interface UserBet {
 }
 
 const Betting = () => {
-  // Access virtual currency from the simulation context
-  const { virtualCurrency } = useSimulation();
+  // Access virtual currency and user object from the simulation context
+  const { virtualCurrency, user } = useSimulation(); // Destructure user here
   // Hook for displaying toast notifications
   const { toast } = useToast();
 
@@ -60,71 +62,83 @@ const Betting = () => {
   // State for loading user bets
   const [loadingUserBets, setLoadingUserBets] = useState(false);
 
+  // NEW: State for Admin Panel
+  const [showAdminPanelModal, setShowAdminPanelModal] = useState(false);
+  // userRole is now derived from context: const [userRole, setUserRole] = useState<string>('Beginner'); // This state is no longer needed here
+
+  // NEW: States for Create Event form
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDescription, setNewEventDescription] = useState('');
+  const [newEventDate, setNewEventDate] = useState(''); // Expected format for datetime-local
+  const [newEventOutcomes, setNewEventOutcomes] = useState<string[]>(['', '']); // Start with two empty outcomes
+
+  // NEW: States for Declare Result form
+  const [selectedEventToDeclare, setSelectedEventToDeclare] = useState<string>('');
+  const [selectedWinningOption, setSelectedWinningOption] = useState<string>('');
+  const [activeEvents, setActiveEvents] = useState<BettingEvent[]>([]); // For declare result dropdown
 
   // useEffect hook to fetch all betting events when the component mounts
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        // Make an API call to get all betting events
         const response = await axios.get('http://localhost:8000/api/betting/getAllEvents');
-        // Ensure the data received is an array before setting the state.
-        // This prevents the 'map is undefined' error if the API returns non-array data.
-        // Transform the backend response to match the frontend interface
         const transformedEvents: BettingEvent[] = Array.isArray(response.data)
           ? response.data.map((event: any) => ({
-              id: event._id, // Map backend _id to frontend id
-              name: event.title, // Map backend title to frontend name
+              id: event._id,
+              name: event.title,
               description: event.description,
-              type: event.type, // Assuming 'type' is consistent or needs a specific mapping if not
+              type: event.type,
               totalPool: event.totalPool,
-              endDate: event.eventDate, // Map backend 'eventDate' to frontend 'endDate'
-              options: Array.isArray(event.outcomes) // Ensure 'outcomes' is an array before mapping
+              endDate: event.eventDate,
+              options: Array.isArray(event.outcomes)
                 ? event.outcomes.map((outcome: any) => ({
-                    id: outcome._id, // Map backend '_id' of outcome to frontend 'id'
-                    name: outcome.option, // Map backend 'option' to frontend 'name'
-                    odds: outcome.multiplier, // Map backend 'multiplier' to frontend 'odds'
+                    id: outcome._id,
+                    name: outcome.option,
+                    odds: outcome.multiplier,
                   }))
-                : [], // Default to empty array if outcomes is not an array
+                : [],
+              isClosed: event.isClosed, // Include isClosed
             }))
           : [];
         setBettingEvents(transformedEvents);
+        // Filter for active events for the declare result dropdown
+        setActiveEvents(transformedEvents.filter(event => !event.isClosed));
       } catch (error) {
-        // Log the error and display a toast notification
         console.error('Error fetching events:', error);
         toast({
           title: "Error",
           description: "Failed to load betting events",
           variant: "destructive"
         });
-        // Set betting events to an empty array on error to ensure it's always iterable
         setBettingEvents([]);
+        setActiveEvents([]);
       } finally {
-        // Set loading to false regardless of success or failure
         setLoading(false);
       }
     };
-    fetchEvents(); // Call the fetch function
+
+    // Removed direct JWT decoding for user role, now relying on SimulationContext
+    // The user role is now managed by the SimulationProvider and accessed via the `user` object.
+    // No need for separate `fetchUserRole` logic here.
+
+    fetchEvents();
   }, []); // Empty dependency array ensures this runs only once on mount
 
-  // Handler for selecting a betting option for a specific event
   const handleSelectOption = (eventId: string, optionId: string) => {
     setSelectedOptions({
       ...selectedOptions,
-      [eventId]: optionId // Update the selected option for the given event
+      [eventId]: optionId
     });
   };
 
-  // Handler for changing the bet amount for a specific event
   const handleBetAmountChange = (eventId: string, amount: string) => {
-    const numAmount = parseInt(amount); // Parse the input amount to an integer
+    const numAmount = parseInt(amount);
     if (!isNaN(numAmount)) {
-      // If it's a valid number, update the bet amount state (ensure non-negative)
       setBetAmounts({
         ...betAmounts,
         [eventId]: numAmount > 0 ? numAmount : 0
       });
     } else {
-      // If the input is not a number (e.g., empty string), set the amount to 0
       setBetAmounts({
         ...betAmounts,
         [eventId]: 0
@@ -132,129 +146,70 @@ const Betting = () => {
     }
   };
 
-  // Handler for placing a bet on a specific event
   const handlePlaceBet = async (eventId: string) => {
-    const optionId = selectedOptions[eventId]; // Get the selected option ID for the event
-    const amount = betAmounts[eventId] || 0; // Get the bet amount, default to 0 if not set
+    const optionId = selectedOptions[eventId];
+    const amount = betAmounts[eventId] || 0;
 
-    // Validate if an option is selected
     if (!optionId) {
-      toast({
-        title: "No option selected",
-        description: "Please select an outcome to bet on",
-        variant: "destructive"
-      });
+      toast({ title: "No option selected", description: "Please select an outcome to bet on", variant: "destructive" });
       return;
     }
-
-    // Validate if the amount is valid
     if (amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid betting amount",
-        variant: "destructive"
-      });
+      toast({ title: "Invalid amount", description: "Please enter a valid betting amount", variant: "destructive" });
       return;
     }
-
-    // Validate if the user has sufficient virtual currency
     if (amount > virtualCurrency) {
-      toast({
-        title: "Insufficient funds",
-        description: `You need ${formatCurrency(amount)} VC to place this bet`,
-        variant: "destructive"
-      });
+      toast({ title: "Insufficient funds", description: `You need ${formatCurrency(amount)} VC to place this bet`, variant: "destructive" });
       return;
     }
 
     try {
-      // Retrieve authentication token from localStorage
-      const authToken = localStorage.getItem('token'); // Replace 'authToken' with your actual key
-
+      const authToken = localStorage.getItem('token'); // Use 'token'
       if (!authToken) {
-        toast({
-          title: "Authentication Error",
-          description: "You are not authenticated. Please log in.",
-          variant: "destructive"
-        });
+        toast({ title: "Authentication Error", description: "You are not authenticated. Please log in.", variant: "destructive" });
         return;
       }
 
-      // Find the selected option object from the bettingEvents state
       const event = bettingEvents.find(e => e.id === eventId);
       const selectedOptionObject = event?.options.find(o => o.id === optionId);
 
       if (!selectedOptionObject) {
-        toast({
-          title: "Error",
-          description: "Selected option not found for this event.",
-          variant: "destructive"
-        });
+        toast({ title: "Error", description: "Selected option not found for this event.", variant: "destructive" });
         return;
       }
 
-      // Make an API call to place the bet, including the Authorization header
-      // Send selectedOptionObject.name (e.g., "India wins") instead of optionId
       await axios.post(`http://localhost:8000/api/betting/${eventId}/bet`,
-        {
-          selectedOption: selectedOptionObject.name, // Sending the option's name/title
-          amount
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}` // Include the Bearer token
-          }
-        }
+        { selectedOption: selectedOptionObject.name, amount },
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
 
-      // Display success toast
-      toast({
-        title: "Bet placed successfully",
-        description: `${formatCurrency(amount)} VC on "${selectedOptionObject.name}"`,
-      });
+      toast({ title: "Bet placed successfully", description: `${formatCurrency(amount)} VC on "${selectedOptionObject.name}"` });
 
-      // Refresh events to get updated odds and pools after placing a bet
+      // Refresh events to get updated odds and pools
       const eventsResponse = await axios.get('http://localhost:8000/api/betting/getAllEvents');
-      // Transform the refreshed data as well
       const refreshedTransformedEvents: BettingEvent[] = Array.isArray(eventsResponse.data)
         ? eventsResponse.data.map((event: any) => ({
-            id: event._id,
-            name: event.title,
-            description: event.description,
-            type: event.type,
-            totalPool: event.totalPool,
-            endDate: event.eventDate,
-            options: Array.isArray(event.outcomes)
-              ? event.outcomes.map((outcome: any) => ({
-                  id: outcome._id,
-                  name: outcome.option,
-                  odds: outcome.multiplier,
-                }))
-              : [],
+            id: event._id, name: event.title, description: event.description, type: event.type,
+            totalPool: event.totalPool, endDate: event.eventDate,
+            options: Array.isArray(event.outcomes) ? event.outcomes.map((outcome: any) => ({
+                id: outcome._id, name: outcome.option, odds: outcome.multiplier,
+              })) : [],
+            isClosed: event.isClosed,
           }))
         : [];
       setBettingEvents(refreshedTransformedEvents);
+      setActiveEvents(refreshedTransformedEvents.filter(event => !event.isClosed));
 
-      // Reset the selection and amount for the event after placing the bet
+
       setSelectedOptions(prev => ({ ...prev, [eventId]: '' }));
       setBetAmounts(prev => ({ ...prev, [eventId]: 0 }));
 
     } catch (error) {
-      // Log the error and display a failure toast
       console.error('Error placing bet:', error);
-      // Check for specific unauthorized error status
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        toast({
-          title: "Unauthorized",
-          description: "Your session has expired or you are not authorized. Please log in again.",
-          variant: "destructive"
-        });
+        toast({ title: "Unauthorized", description: "Your session has expired or you are not authorized. Please log in again.", variant: "destructive" });
       } else {
-        toast({
-          title: "Bet failed",
-          description: "There was an error processing your bet",
-          variant: "destructive"
-        });
+        toast({ title: "Bet failed", description: "There was an error processing your bet", variant: "destructive" });
       }
     }
   };
@@ -263,30 +218,20 @@ const Betting = () => {
   const fetchUserBets = async () => {
     setLoadingUserBets(true);
     try {
-      const authToken = localStorage.getItem('token');
+      const authToken = localStorage.getItem('token'); // Use 'token'
       if (!authToken) {
-        toast({
-          title: "Authentication Error",
-          description: "Please log in to view your bets.",
-          variant: "destructive"
-        });
+        toast({ title: "Authentication Error", description: "Please log in to view your bets.", variant: "destructive" });
         setLoadingUserBets(false);
         return;
       }
 
       const response = await axios.get('http://localhost:8000/api/betting/getMyBets', {
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
+        headers: { Authorization: `Bearer ${authToken}` }
       });
       setUserBets(response.data);
     } catch (error) {
       console.error('Error fetching user bets:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load your betting history.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to load your betting history.", variant: "destructive" });
       setUserBets([]);
     } finally {
       setLoadingUserBets(false);
@@ -297,6 +242,129 @@ const Betting = () => {
   const handleOpenMyBetsModal = () => {
     setShowMyBetsModal(true);
     fetchUserBets(); // Fetch bets when the modal is opened
+  };
+
+  // NEW: Admin Panel Functions
+  const handleAddOutcome = () => {
+    setNewEventOutcomes([...newEventOutcomes, '']);
+  };
+
+  const handleRemoveOutcome = (index: number) => {
+    const updatedOutcomes = newEventOutcomes.filter((_, i) => i !== index);
+    setNewEventOutcomes(updatedOutcomes);
+  };
+
+  const handleOutcomeChange = (index: number, value: string) => {
+    const updatedOutcomes = [...newEventOutcomes];
+    updatedOutcomes[index] = value;
+    setNewEventOutcomes(updatedOutcomes);
+  };
+
+  const handleCreateEvent = async () => {
+    if (!newEventTitle || !newEventDate || newEventOutcomes.some(o => !o.trim())) {
+      toast({ title: "Invalid Input", description: "Please fill all required fields and provide at least two outcomes.", variant: "destructive" });
+      return;
+    }
+    if (newEventOutcomes.length < 2) {
+      toast({ title: "Invalid Outcomes", description: "Please provide at least two outcomes.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const authToken = localStorage.getItem('token'); // Use 'token'
+      if (!authToken) {
+        toast({ title: "Authentication Error", description: "You are not authenticated.", variant: "destructive" });
+        return;
+      }
+
+      await axios.post('http://localhost:8000/api/betting/create',
+        {
+          title: newEventTitle,
+          description: newEventDescription,
+          eventDate: newEventDate,
+          outcomes: newEventOutcomes.filter(o => o.trim() !== '') // Send only non-empty outcomes
+        },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      toast({ title: "Event Created", description: `"${newEventTitle}" has been created successfully.`, });
+      // Clear form and refresh events
+      setNewEventTitle('');
+      setNewEventDescription('');
+      setNewEventDate('');
+      setNewEventOutcomes(['', '']);
+      // Re-fetch all events to update the main list and active events for declare result
+      const eventsResponse = await axios.get('http://localhost:8000/api/betting/getAllEvents');
+      const refreshedTransformedEvents: BettingEvent[] = Array.isArray(eventsResponse.data)
+        ? eventsResponse.data.map((event: any) => ({
+            id: event._id, name: event.title, description: event.description, type: event.type,
+            totalPool: event.totalPool, endDate: event.eventDate,
+            options: Array.isArray(event.outcomes) ? event.outcomes.map((outcome: any) => ({
+                id: outcome._id, name: outcome.option, odds: outcome.multiplier,
+              })) : [],
+            isClosed: event.isClosed,
+          }))
+        : [];
+      setBettingEvents(refreshedTransformedEvents);
+      setActiveEvents(refreshedTransformedEvents.filter(event => !event.isClosed));
+
+    } catch (error) {
+      console.error('Error creating event:', error);
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        toast({ title: "Access Denied", description: "You do not have administrative privileges to create events.", variant: "destructive" });
+      } else {
+        toast({ title: "Creation Failed", description: "Failed to create event.", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleDeclareResult = async () => {
+    if (!selectedEventToDeclare || !selectedWinningOption) {
+      toast({ title: "Missing Selection", description: "Please select an event and a winning option.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const authToken = localStorage.getItem('token'); // Use 'token'
+      if (!authToken) {
+        toast({ title: "Authentication Error", description: "You are not authenticated.", variant: "destructive" });
+        return;
+      }
+
+      await axios.post(`http://localhost:8000/api/betting/events/${selectedEventToDeclare}/declare`,
+        { winningOption: selectedWinningOption },
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+
+      toast({ title: "Result Declared", description: `Result for event declared successfully!`, });
+      // Clear form and refresh events
+      setSelectedEventToDeclare('');
+      setSelectedWinningOption('');
+      // Re-fetch all events to update the main list and active events for declare result
+      const eventsResponse = await axios.get('http://localhost:8000/api/betting/getAllEvents');
+      const refreshedTransformedEvents: BettingEvent[] = Array.isArray(eventsResponse.data)
+        ? eventsResponse.data.map((event: any) => ({
+            id: event._id, name: event.title, description: event.description, type: event.type,
+            totalPool: event.totalPool, endDate: event.eventDate,
+            options: Array.isArray(event.outcomes) ? event.outcomes.map((outcome: any) => ({
+                id: outcome._id, name: outcome.option, odds: outcome.multiplier,
+              })) : [],
+            isClosed: event.isClosed,
+          }))
+        : [];
+      setBettingEvents(refreshedTransformedEvents);
+      setActiveEvents(refreshedTransformedEvents.filter(event => !event.isClosed));
+
+    } catch (error) {
+      console.error('Error declaring result:', error);
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        toast({ title: "Access Denied", description: "You do not have administrative privileges to declare results.", variant: "destructive" });
+      } else if (axios.isAxiosError(error) && error.response?.data?.message) {
+        toast({ title: "Declaration Failed", description: error.response.data.message, variant: "destructive" });
+      } else {
+        toast({ title: "Declaration Failed", description: "Failed to declare result.", variant: "destructive" });
+      }
+    }
   };
 
   // Render a loading message while events are being fetched
@@ -340,13 +408,23 @@ const Betting = () => {
       <Navigation />
 
 
+      {/* NEW: Admin Panel button, fixed to the top-right, slightly below My Bets */}
+      {user?.role === 'Admin' && ( // Check user?.role from context
+        <Button
+          variant="default"
+          onClick={() => setShowAdminPanelModal(true)}
+          className="fixed top-20 right-6 z-[100] flex items-center gap-2 px-4 py-2 rounded-md shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Info className="h-4 w-4" />
+          Admin Panel
+        </Button>
+      )}
 
       <main className="pt-24 pb-20 md:pb-8 md:pl-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8"> {/* This div no longer needs to contain the button */}
+          <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Betting Events</h1>
             <p className="text-muted-foreground">Place virtual bets on sports, predictions, and other events</p>
-            
           </div>
 
           {/* Information banner about how betting works */}
@@ -372,15 +450,14 @@ const Betting = () => {
             <Badge variant="default" className="px-3 py-1.5 text-sm cursor-pointer">All Events</Badge>
             <Badge variant="outline" className="px-3 py-1.5 text-sm cursor-pointer">Sports</Badge>
             <Badge variant="outline" className="px-3 py-1.5 text-sm cursor-pointer">Predictions</Badge>
-                  {/* Moved NEW: My Bets button to be a direct child of the main wrapper div */}
-      <Button
-        variant="outline"
-        onClick={handleOpenMyBetsModal}
-        className="top-6 right-6 flex items-center gap-2 px-4 py-2 rounded-md shadow-lg bg-cyan-800" // Increased z-index
-      >
-        <Ticket className="h-4 w-4" />
-        My Bets
-      </Button>
+            <Button
+                variant="outline"
+                onClick={handleOpenMyBetsModal}
+                className="top-6 right-6  flex items-center gap-2 px-4 py-2 rounded-md shadow-lg bg-cyan-800 text-white hover:bg-cyan-700"
+              >
+                <Ticket className="h-4 w-4" />
+                My Bets
+            </Button>
           </div>
 
           {/* Grid to display individual betting event cards */}
@@ -528,11 +605,145 @@ const Betting = () => {
                     <p className="text-muted-foreground">
                       Amount: <span className="font-medium text-foreground">{formatCurrency(bet.amount)} VC</span>
                     </p>
-                    {/* You can add more details here, e.g., potential win, outcome if event is closed */}
+                    {/* Display if event is closed and winner is declared */}
+                    {bet.event.isClosed && (
+                      <p className={`text-sm font-medium ${bet.selectedOption === bet.event.winner ? 'text-green-500' : 'text-red-500'}`}>
+                        Outcome: {bet.event.winner ? `Winner: ${bet.event.winner}` : 'Result Pending'}
+                      </p>
+                    )}
                   </Card>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Admin Panel Modal */}
+      {showAdminPanelModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="relative w-full max-w-3xl mx-auto p-8 bg-card rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-3xl font-bold mb-6 text-center">Admin Panel</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowAdminPanelModal(false)}
+            >
+              <XCircle className="h-7 w-7" />
+            </Button>
+
+            {/* Create New Event Section */}
+            <div className="mb-8 p-6 border rounded-lg bg-secondary/10">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <PlusCircle className="h-5 w-5" /> Create New Betting Event
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label htmlFor="newEventTitle" className="block text-sm font-medium mb-1">Event Title</label>
+                  <input
+                    id="newEventTitle"
+                    type="text"
+                    className="w-full p-2 border border-input rounded-md bg-background"
+                    value={newEventTitle}
+                    onChange={(e) => setNewEventTitle(e.target.value)}
+                    placeholder="e.g., India vs Australia ODI Final"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="newEventDate" className="block text-sm font-medium mb-1">Event Date & Time</label>
+                  <input
+                    id="newEventDate"
+                    type="datetime-local"
+                    className="w-full p-2 border border-input rounded-md bg-background"
+                    value={newEventDate}
+                    onChange={(e) => setNewEventDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label htmlFor="newEventDescription" className="block text-sm font-medium mb-1">Description (Optional)</label>
+                <textarea
+                  id="newEventDescription"
+                  className="w-full p-2 border border-input rounded-md bg-background min-h-[80px]"
+                  value={newEventDescription}
+                  onChange={(e) => setNewEventDescription(e.target.value)}
+                  placeholder="Brief description of the event"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Outcomes (at least 2)</label>
+                {newEventOutcomes.map((outcome, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      className="flex-1 p-2 border border-input rounded-md bg-background"
+                      value={outcome}
+                      onChange={(e) => handleOutcomeChange(index, e.target.value)}
+                      placeholder={`Outcome ${index + 1}`}
+                    />
+                    {newEventOutcomes.length > 2 && (
+                      <Button variant="destructive" size="icon" onClick={() => handleRemoveOutcome(index)}>
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button variant="secondary" onClick={handleAddOutcome} className="mt-2 flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" /> Add Another Outcome
+                </Button>
+              </div>
+              <Button onClick={handleCreateEvent} className="w-full flex items-center gap-2">
+                Create Event
+              </Button>
+            </div>
+
+            {/* Declare Result Section */}
+            <div className="p-6 border rounded-lg bg-secondary/10">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" /> Declare Event Result
+              </h3>
+              <div className="mb-4">
+                <label htmlFor="selectEvent" className="block text-sm font-medium mb-1">Select Event</label>
+                <select
+                  id="selectEvent"
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                  value={selectedEventToDeclare}
+                  onChange={(e) => {
+                    setSelectedEventToDeclare(e.target.value);
+                    setSelectedWinningOption(''); // Reset winning option when event changes
+                  }}
+                >
+                  <option value="">-- Select an active event --</option>
+                  {activeEvents.map(event => (
+                    <option key={event.id} value={event.id}>{event.name}</option>
+                  ))}
+                </select>
+              </div>
+              {selectedEventToDeclare && (
+                <div className="mb-4">
+                  <label htmlFor="selectWinningOption" className="block text-sm font-medium mb-1">Select Winning Option</label>
+                  <select
+                    id="selectWinningOption"
+                    className="w-full p-2 border border-input rounded-md bg-background"
+                    value={selectedWinningOption}
+                    onChange={(e) => setSelectedWinningOption(e.target.value)}
+                  >
+                    <option value="">-- Select winning option --</option>
+                    {bettingEvents.find(e => e.id === selectedEventToDeclare)?.options.map(option => (
+                      <option key={option.id} value={option.name}>{option.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <Button
+                onClick={handleDeclareResult}
+                className="w-full flex items-center gap-2"
+                disabled={!selectedEventToDeclare || !selectedWinningOption}
+              >
+                Declare Result
+              </Button>
+            </div>
           </div>
         </div>
       )}

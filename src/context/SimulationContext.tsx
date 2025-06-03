@@ -22,8 +22,6 @@ export interface Asset {
   owned: boolean;
 }
 
-
-
 export interface BettingEvent {
   id: string;
   name: string;
@@ -36,6 +34,7 @@ export interface BettingEvent {
     name: string;
     odds: number;
   }[];
+  isClosed: boolean; // Added this to match the Betting component's interface
 }
 
 // User Data Type
@@ -44,21 +43,20 @@ export interface User {
   name: string;
   email: string;
   vcBalance: number;
-  role: string;
-  //loan: Array ;
+  role: string; // This is correctly defined here
   stocks: stockItem[];
-  socialStatus: number ;
-  assets: ownedCollectibles[] ;
+  socialStatus: number;
+  assets: ownedCollectibles[];
 }
 
-export interface stockItem{
+export interface stockItem {
   symbol: string;
   shares: number;
   purchasePrice: number;
   _id: string;
 }
 
-export interface ownedCollectibles{
+export interface ownedCollectibles {
   collectibleId: string,
   name: string,
   category: string,
@@ -72,7 +70,7 @@ export interface ownedCollectibles{
 // Context State
 interface SimulationContextType {
   // User data
-  user: User | null;
+  user: User | null; // Expose the full user object
   virtualCurrency: number;
   socialStatus: number;
   setUser: (user: User | null) => void;
@@ -84,9 +82,9 @@ interface SimulationContextType {
   // Portfolio data
   stocks: Stock[];
   assets: Asset[];
-  bettingEvents: BettingEvent[];
+  bettingEvents: BettingEvent[]; // This is not being used in the context, but kept for consistency
 
-  // Portfolio actions
+  // Portfolio actions (placeholders for now)
   buyStock: (stockId: string, quantity: number) => void;
   sellStock: (stockId: string, quantity: number) => void;
   buyAsset: (assetId: string) => void;
@@ -97,7 +95,7 @@ interface SimulationContextType {
 // Create context with default values
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
 
-// Sample data
+// Sample data (these will be overridden by fetched data if available)
 const sampleStocks: Stock[] = [
   { id: "1", name: "Tech Giant", symbol: "TGT", price: 150, change: 2.5, quantity: 0 },
   { id: "2", name: "Energy Corp", symbol: "ENC", price: 75, change: -1.2, quantity: 0 },
@@ -123,6 +121,7 @@ const sampleBettingEvents: BettingEvent[] = [
     totalPool: 25000,
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     options: [{ id: "1a", name: "India wins", odds: 1.8 }, { id: "1b", name: "Australia wins", odds: 2.1 }, { id: "1c", name: "Draw", odds: 8.5 }],
+    isClosed: false,
   },
   {
     id: "2",
@@ -132,6 +131,7 @@ const sampleBettingEvents: BettingEvent[] = [
     totalPool: 50000,
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     options: [{ id: "2a", name: "Candidate A wins", odds: 2.2 }, { id: "2b", name: "Candidate B wins", odds: 1.9 }],
+    isClosed: false,
   },
 ];
 
@@ -142,36 +142,47 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [socialStatus, setsocialStatus] = useState<number>(0);
   const [stocks, setStocks] = useState<Stock[]>(sampleStocks);
   const [assets, setAssets] = useState<Asset[]>(sampleAssets);
-  const [bettingEvents, setBettingEvents] = useState<BettingEvent[]>(sampleBettingEvents);
+  const [bettingEvents, setBettingEvents] = useState<BettingEvent[]>(sampleBettingEvents); // Keeping this for now, though Betting component fetches its own
 
   // Fetch user data on mount if token exists
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        console.log("No token found in localStorage. User not logged in.");
+        setUser(null); // Ensure user is null if no token
+        setVirtualCurrency(0);
+        setsocialStatus(0);
+        return;
+      }
 
       try {
         const res = await axios.get("http://localhost:8000/api/user", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        //console.log(res)
+        // console.log("User data fetched from backend:", res.data); // Debugging line
 
         setUser({
           _id: res.data._id,
           name: res.data.name,
           email: res.data.email,
           vcBalance: res.data.vcBalance,
-          role: res.data.role,
+          role: res.data.role, // This is correctly being set from backend response
           stocks: res.data.stocks,
           socialStatus: res.data.socialStatus,
-          assets : res.data.ownedCollectibles
+          assets: res.data.ownedCollectibles
         });
 
         setVirtualCurrency(res.data.vcBalance);
-        setsocialStatus(res.data.socialStatus)
+        setsocialStatus(res.data.socialStatus);
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching user data:", error);
+        // Clear user data on error (e.g., token expired, invalid)
+        localStorage.removeItem("token");
+        setUser(null);
+        setVirtualCurrency(0);
+        setsocialStatus(0);
       }
     };
 
@@ -185,12 +196,15 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.removeItem("token");
     setUser(null);
     setVirtualCurrency(0);
+    setsocialStatus(0);
+    // Optionally, force a page reload or redirect to login
+    // window.location.reload();
   };
 
   return (
     <SimulationContext.Provider
       value={{
-        user,
+        user, // Now exposing the full user object with role
         virtualCurrency,
         socialStatus,
         setUser,
@@ -200,7 +214,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         logout,
         stocks,
         assets,
-        bettingEvents,
+        bettingEvents, // Still providing this, though Betting component fetches its own
         buyStock: () => {},
         sellStock: () => {},
         buyAsset: () => {},
